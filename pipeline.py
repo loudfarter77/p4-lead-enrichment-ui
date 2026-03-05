@@ -14,12 +14,27 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 
 def get_sheet_data(sheet_id: str, creds_path: str):
+    creds = None
+
+    # Try Streamlit Secrets first
     try:
         import streamlit as st
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        if "gcp_service_account" in st.secrets:
+            creds_dict = dict(st.secrets["gcp_service_account"])
+            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
     except Exception:
+        pass
+
+    # Fall back to local file
+    if creds is None:
         creds = Credentials.from_service_account_file(creds_path, scopes=SCOPES)
+
+    client = gspread.authorize(creds)
+    spreadsheet = client.open_by_key(sheet_id)
+    worksheet = spreadsheet.sheet1
+    data = worksheet.get_all_records()
+    df = pd.DataFrame(data)
+    return df, worksheet
 
     client = gspread.authorize(creds)
     spreadsheet = client.open_by_key(sheet_id)
