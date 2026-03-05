@@ -14,7 +14,13 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 
 def get_sheet_data(sheet_id: str, creds_path: str):
-    creds = Credentials.from_service_account_file(creds_path, scopes=SCOPES)
+    try:
+        import streamlit as st
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+    except Exception:
+        creds = Credentials.from_service_account_file(creds_path, scopes=SCOPES)
+
     client = gspread.authorize(creds)
     spreadsheet = client.open_by_key(sheet_id)
     worksheet = spreadsheet.sheet1
@@ -53,9 +59,14 @@ def write_email_to_sheet(worksheet, row_index: int, email: str):
 
 
 def run_pipeline(sheet_id: str, creds_path: str, progress_callback=None) -> list:
-    api_key = os.getenv("ANTHROPIC_API_KEY")
+    try:
+        import streamlit as st
+        api_key = st.secrets.get("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+    except Exception:
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+
     if not api_key:
-        raise ValueError("ANTHROPIC_API_KEY not found. Check your .env file.")
+        raise ValueError("ANTHROPIC_API_KEY not found.")
 
     anthropic_client = anthropic.Anthropic(api_key=api_key)
     df, worksheet = get_sheet_data(sheet_id, creds_path)
