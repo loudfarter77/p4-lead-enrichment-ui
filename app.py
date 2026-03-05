@@ -44,10 +44,13 @@ if run_button:
         st.stop()
 
     try:
-    import streamlit as st
     has_secrets = "gcp_service_account" in st.secrets
 except Exception:
     has_secrets = False
+
+if not has_secrets and not os.path.exists(creds_path):
+    st.error("No credentials found. Add gcp_service_account to Streamlit Secrets or provide a local service_account.json.")
+    st.stop()
 
 if not has_secrets and not os.path.exists(creds_path):
     st.error("No credentials found. Add gcp_service_account to Streamlit Secrets or provide a local service_account.json.")
