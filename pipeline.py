@@ -19,11 +19,21 @@ def get_sheet_data(sheet_id: str, creds_path: str):
     # Try Streamlit Secrets first (production)
     try:
         import streamlit as st
+        secret_keys = list(st.secrets.keys())
         if "gcp_service_account" in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
             creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-    except Exception:
-        pass
+        else:
+            raise ValueError(f"gcp_service_account not found in secrets. Available keys: {secret_keys}")
+    except Exception as e:
+        raise RuntimeError(f"Secrets error: {e}")
+
+    client = gspread.authorize(creds)
+    spreadsheet = client.open_by_key(sheet_id)
+    worksheet = spreadsheet.sheet1
+    data = worksheet.get_all_records()
+    df = pd.DataFrame(data)
+    return df, worksheet
 
     # Fall back to local file (development)
     if creds is None:
