@@ -16,7 +16,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 def get_sheet_data(sheet_id: str, creds_path: str):
     creds = None
 
-    # Try Streamlit Secrets first
+    # Try Streamlit Secrets first (production)
     try:
         import streamlit as st
         if "gcp_service_account" in st.secrets:
@@ -25,16 +25,9 @@ def get_sheet_data(sheet_id: str, creds_path: str):
     except Exception:
         pass
 
-    # Fall back to local file
+    # Fall back to local file (development)
     if creds is None:
         creds = Credentials.from_service_account_file(creds_path, scopes=SCOPES)
-
-    client = gspread.authorize(creds)
-    spreadsheet = client.open_by_key(sheet_id)
-    worksheet = spreadsheet.sheet1
-    data = worksheet.get_all_records()
-    df = pd.DataFrame(data)
-    return df, worksheet
 
     client = gspread.authorize(creds)
     spreadsheet = client.open_by_key(sheet_id)
@@ -74,10 +67,15 @@ def write_email_to_sheet(worksheet, row_index: int, email: str):
 
 
 def run_pipeline(sheet_id: str, creds_path: str, progress_callback=None) -> list:
+    # Get API key — try Streamlit Secrets first, then local .env
+    api_key = None
     try:
         import streamlit as st
-        api_key = st.secrets.get("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+        api_key = st.secrets.get("ANTHROPIC_API_KEY")
     except Exception:
+        pass
+
+    if not api_key:
         api_key = os.getenv("ANTHROPIC_API_KEY")
 
     if not api_key:
