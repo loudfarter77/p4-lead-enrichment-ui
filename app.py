@@ -43,9 +43,15 @@ if run_button:
         st.error("Please enter your Google Sheet ID.")
         st.stop()
 
-    if not os.path.exists(creds_path):
-        st.error(f"Could not find {creds_path}. Make sure service_account.json is in your project folder.")
-        st.stop()
+    try:
+    import streamlit as st
+    has_secrets = "gcp_service_account" in st.secrets
+except Exception:
+    has_secrets = False
+
+if not has_secrets and not os.path.exists(creds_path):
+    st.error("No credentials found. Add gcp_service_account to Streamlit Secrets or provide a local service_account.json.")
+    st.stop()
 
     if not os.getenv("ANTHROPIC_API_KEY"):
         st.error("ANTHROPIC_API_KEY not found. Check your .env file.")
