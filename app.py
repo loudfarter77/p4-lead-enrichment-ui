@@ -43,21 +43,16 @@ if run_button:
         st.error("Please enter your Google Sheet ID.")
         st.stop()
 
-    try:
+    # Check for credentials — either Streamlit Secrets or local file
     has_secrets = "gcp_service_account" in st.secrets
-except Exception:
-    has_secrets = False
+    if not has_secrets and not os.path.exists(creds_path):
+        st.error("No credentials found. Add gcp_service_account to Streamlit Secrets or provide a local service_account.json.")
+        st.stop()
 
-if not has_secrets and not os.path.exists(creds_path):
-    st.error("No credentials found. Add gcp_service_account to Streamlit Secrets or provide a local service_account.json.")
-    st.stop()
-
-if not has_secrets and not os.path.exists(creds_path):
-    st.error("No credentials found. Add gcp_service_account to Streamlit Secrets or provide a local service_account.json.")
-    st.stop()
-
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        st.error("ANTHROPIC_API_KEY not found. Check your .env file.")
+    # Check for API key
+    api_key = st.secrets.get("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        st.error("ANTHROPIC_API_KEY not found. Add it to Streamlit Secrets or your .env file.")
         st.stop()
 
     st.divider()
