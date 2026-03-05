@@ -16,15 +16,16 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 def get_sheet_data(sheet_id: str, creds_path: str):
     creds = None
 
-    # Try Streamlit Secrets first (production)
     try:
         import streamlit as st
-        secret_keys = list(st.secrets.keys())
         if "gcp_service_account" in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
+            # Fix common private_key formatting issue
+            if "private_key" in creds_dict:
+                creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
             creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         else:
-            raise ValueError(f"gcp_service_account not found in secrets. Available keys: {secret_keys}")
+            raise ValueError("gcp_service_account not found in secrets.")
     except Exception as e:
         raise RuntimeError(f"Secrets error: {e}")
 
